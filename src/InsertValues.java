@@ -164,7 +164,7 @@ public class InsertValues {
 		String[] containerSyllables1 = { "SM", "LG", "MED", "JUMBO", "WRAP" };
 		String[] containerSyllables2 = { "CASE", "BOX", "BAG", "JAR", "PKG", "PACK", "CAN", "DRUM" };
 
-		try {			
+		try {
 			Integer size = sf * 200000;
 			Random random = new Random();
 			ArrayList<Integer> keys = shuffleKey(200000);
@@ -203,19 +203,192 @@ public class InsertValues {
 				String pCommentString = random.ints(97, 122 + 1).limit(length)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 
-				this.part.insertOne(new Document("part_key", key)
-						.append("name", nameString)
-						.append("mfgr", mfgrString)
-						.append(key, value)
+				this.part.insertOne(new Document("part_key", key).append("name", nameString).append("mfgr", mfgrString)
+						.append("brand", brandString).append("type", typeString).append("size", sizeString)
+						.append("container", containerString).append("retail_price", retailPriceString)
+						.append("comment", pCommentString));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void InsertPartSupp() {
+		try {
+			Integer S = sf * 10000;
+			Integer size = sf * 200000;
+			Random random = new Random();
+			ArrayList<Integer> psKeys = shuffleKey(200000);
+			for (int idx = 0; idx < size; idx++) {
+				Integer psKey = psKeys.get(idx);
+				for (int i = 0; i < 4; i++) {
+					Integer psSuppKey = (psKey + (i * ((S / 4) + (psKey - 1) / S))) % S;
+					Integer psAvailQTY = random.nextInt(9999) + 1;
+					String psSupplyCost = String.format("%.2f", (random.nextInt(99901) + 100) / 100.0);
+					int length = random.nextInt(150) + 49;
+					String psComment = random.ints(97, 122 + 1).limit(length)
+							.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+							.toString();
+
+					this.partSupplier.insertOne(new Document("part_key", psKey).append("supp_key", psSuppKey)
+							.append("avail_qty", psAvailQTY).append("supply_cost", psSupplyCost)
+							.append("comment", psComment));
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void InsertCustomer() {
+
+		String[] Segments = { "AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD" };
+
+		try {
+			Integer size = sf * 150000;
+			Random random = new Random();
+			ArrayList<Integer> keys = shuffleKey(150000);
+			for (int i = 0; i < size; i++) {
+				Integer key = keys.get(i);
+				String cNameString = "Customer#" + String.format("%09d", key);
+				int length = random.nextInt(30) + 10;
+				String addressString = random.ints(97, 122 + 1).limit(length)
+						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+				Integer nationInteger = random.nextInt(25);
+				String phoneString = Integer.toString(nationInteger + 10) + "-"
+						+ Integer.toString(random.nextInt(900) + 100) + "-"
+						+ Integer.toString(random.nextInt(900) + 100) + "-"
+						+ Integer.toString(random.nextInt(9000) + 1000);
+				String acctbalString = String.format("%.2f", (random.nextInt(1099999) - 99999) / 100.0);
+				String mktSegmentString = Segments[random.nextInt(5)];
+				Integer count = random.nextInt(88) + 29;
+				String commentString = random.ints(97, 122 + 1).limit(count)
+						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+
+				this.customer.insertOne(new Document("cust_key", key).append("name", cNameString)
+						.append("address", addressString).append("nation_key", nationInteger)
+						.append("phone", phoneString).append("acct_bal", acctbalString)
+						.append("mkt_segment", mktSegmentString).append("comment", commentString));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void InsertOrderLineItem() {
+
+		String[] priorities = { "1-URGENT", "2-HIGH", "3-MEDIUM", "4-NOT SPECIFIED", "5-LOW" };
+		String[] instructs = { "DELIVER IN PERSON", "COLLECT COD", "NONE", "TAKE BACK RETURN" };
+		String[] modes = { "REG AIR", "AIR", "RAIL", "SHIP", "TRUCK", "MAIL", "FOB" };
+		Date startDate = Date.valueOf("1992-01-01");
+		Date currentDate = Date.valueOf("1995-06-17");
+		Date endDate = Date.valueOf("1998-12-31");
+		try {			
+			Integer orderSize = sf * 1500000 * 4;
+			ArrayList<Integer> orderKeys = shuffleKey(1500000 * 4);
+			Random random = new Random();
+			for (int idx = 0; idx < orderSize; idx++) {
+				Integer orderKey = orderKeys.get(idx);
+				if (orderKey % 4 != 0) {
+					continue;
+				}
+				Integer custKey = 0;
+				do {
+					custKey = random.nextInt(sf * 150000);
+				} while (custKey % 3 == 0);
+				// set to P as default, will change according to lineItems
+				String orderStatusString = "P";
+				// set to 0.0 as place holder, will change according to lineItems
+				Double totalPrice = 0.0;
+				// endDate - 151 days
+				Date date = addDays(endDate, -151);
+				long raw = date.getTime();
+				long startRaw = startDate.getTime();
+				int difference = (int) (raw - startRaw);
+				Date orderDate = new Date(startRaw + random.nextInt(difference));
+				String priorityString = priorities[random.nextInt(5)];
+				String clerkString = "Clerk#" + String.format("%09d", random.nextInt(sf * 1000) + 1);
+				String shipPriorityString = "0";
+				String oCommentString = random.ints(97, 122 + 1).limit(124)
+						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+
+				int lineItemRows = random.nextInt(7) + 1;
+				int Fnumber = 0;
+				int Onumber = 0;
+				for (int j = 0; j < lineItemRows; j++) {
+					Integer L_OrderKey = orderKey;
+					Integer partKey = random.nextInt(sf * 200000);
+					int S = sf * 10000;
+					int i = random.nextInt(4);
+					Integer suppKey = (partKey + (i * ((S / 4) + (partKey - 1) / S))) % S;
+					Integer lineNum = j; // unique within 7, for simplicity, set to j
+					Integer quantity = random.nextInt(50) + 1;
+					Double extendedPrice = quantity * retailPrices[partKey];
+					String extendedPriceString = String.format("%.2f", extendedPrice);
+					Double discount = random.nextInt(11) / 100.0;
+					String discountString = String.format("%.2f", discount);
+					Double tax = random.nextInt(9) / 100.0;
+					String taxString = String.format("%.2f", discount);
+					// set to "N" as default
+					String returnFlagString = "N";
+					// set to "F" as default
+					String lineStatusString = "F";
+					Date shipDate = addDays(orderDate, random.nextInt(121) + 1);
+					Date commitDate = addDays(orderDate, random.nextInt(61) + 30);
+					Date receiptDate = addDays(shipDate, random.nextInt(30) + 1);
+					String shipInstructString = instructs[random.nextInt(4)];
+					String shipModeString = modes[random.nextInt(7)];
+					String lCommentString = random.ints(97, 122 + 1).limit(124)
+							.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+					if (receiptDate.before(currentDate)) {
+						returnFlagString = (random.nextInt(2) == 0) ? "R" : "A";
+					}
+					if (shipDate.after(currentDate)) {
+						lineStatusString = "O";
+					}
+					if (lineStatusString == "O") {
+						Onumber++;
+					} else {
+						Fnumber++;
+					}
+					totalPrice += extendedPrice * (1 + tax) * (1 - discount);
+					
+					this.lineItem.insertOne(new Document("order_key", L_OrderKey)
+							.append("part_key", partKey)
+							.append("supp_key", suppKey)
+							.append("line_number", lineNum)
+							.append("quantity", quantity)
+							.append("extended_price", extendedPriceString)
+							.append("discount", discountString)
+							.append("tax", taxString)							
+							.append("return_flag", returnFlagString)
+							.append("line_status", lineStatusString)
+							.append("ship_date", shipDate)
+							.append("commit_date", commitDate)
+							.append("receipt_date", receiptDate)
+							.append("ship_instructions", shipInstructString)
+							.append("ship_mode", shipModeString)
+							.append("comment", lCommentString)
+							);					
+				}
+				if (Fnumber == lineItemRows) {
+					orderStatusString = "F";
+				}
+				if (Onumber == lineItemRows) {
+					orderStatusString = "O";
+				}
+				String totalPriceString = String.format("%.2f", totalPrice);
+				
+				this.orders.insertOne(new Document("order_key", orderKey)
+						.append("cust_key", custKey)
+						.append("order_status", orderStatusString)
+						.append("total_price", totalPriceString)
+						.append("order_date", orderDate)
+						.append("order_priority", priorityString)
+						.append("clerk", clerkString)
+						.append("ship_priority", shipPriorityString)							
+						.append("comment", oCommentString)						
 						);
-				
-//				statement.executeUpdate("UPSERT INTO PART VALUES(" + key + ",'" + nameString + "','" + mfgrString
-//						+ "','" + brandString + "','" + typeString + "'," + sizeString + ",'" + containerString + "',"
-//						+ retailPriceString + ",'" + pCommentString + "')");
-				
-//				if (i%9000==0) {
-//					connection.commit();
-//				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -236,10 +409,29 @@ public class InsertValues {
 			System.out.println("Inserting values into supplier collection");
 			InsertSupplier();
 			System.out.println("Values Added to supplier collection");
-			
+
+			/* 200000 documents */
 			System.out.println("Inserting values into part collection");
 			InsertPart();
 			System.out.println("Values Added to part collection");
+
+			/* 800000 documents */
+			System.out.println("Inserting values into partsupp collection");
+			InsertPartSupp();
+			System.out.println("Values Added to partsupp collection");
+
+			/* 150000 documents */
+			System.out.println("Inserting values into customer collection");
+			InsertCustomer();
+			System.out.println("Values Added to customer collection");
+			
+			/*
+			 * Order - 1500000 documents
+			 * lineItem - 6001215 documents
+			 * */
+			System.out.println("insert into order and lineItem");
+//			InsertOrderLineItem();
+			System.out.println("Values Added to order and lineItem collection");
 
 		} catch (Exception e) {
 			e.printStackTrace();
