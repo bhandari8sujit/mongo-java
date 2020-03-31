@@ -5,7 +5,7 @@ import org.bson.Document;
 
 public class CreateCollections {
 
-	private MongoDatabase database;	
+	private MongoDatabase database;
 
 	public CreateCollections(MongoDatabase db) {
 		this.database = db;
@@ -18,7 +18,6 @@ public class CreateCollections {
 		/*
 		 * Delete all the collections, if they exist
 		 */
-
 		for (String name : database.listCollectionNames()) {
 			if (name != null) {
 				MongoCollection<Document> collection = database.getCollection(name);
@@ -26,11 +25,9 @@ public class CreateCollections {
 				System.out.println("Collection " + name + " droppped!");
 			}
 		}
-
 		/*
 		 * Create Collections
 		 */
-
 		for (String name : collectionNames) {
 			database.createCollection(name, new CreateCollectionOptions().capped(false).autoIndex(true));
 		}

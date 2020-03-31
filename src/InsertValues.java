@@ -34,7 +34,7 @@ public class InsertValues {
 	public InsertValues(MongoDatabase db, int i) {
 		this.database = db;
 		this.sf = i;
-		this.retailPrices = new Double[sf * 200000];
+		this.retailPrices = new Double[this.sf * 200000];
 		this.customer = database.getCollection("customer");
 		this.lineItem = database.getCollection("lineitem");
 		this.nation = database.getCollection("nation");
@@ -68,8 +68,9 @@ public class InsertValues {
 				String generatedString = random.ints(97, 122 + 1).limit(124)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 				this.region_key.add(i);
-				this.region.insertOne(new Document("region_key", region_key.get(i))
-						.append("name", i + "," + RegionNames[i]).append("comment", generatedString));
+				this.region.insertOne(new Document("region_key", i)
+						.append("name", i + "," + RegionNames[i])
+						.append("comment", generatedString));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -88,8 +89,9 @@ public class InsertValues {
 				String generatedString = random.ints(97, 122 + 1).limit(124)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 				this.nation_key.add(i);
-				this.nation.insertOne(new Document("nation_key", nation_key.get(i))
-						.append("name", i + "," + nationNamesRegionKeys[i]).append("comment", generatedString));
+				this.nation.insertOne(new Document("nation_key", i)
+						.append("name", i + "," + nationNamesRegionKeys[i])
+						.append("comment", generatedString));
 			}
 
 		} catch (Exception e) {
@@ -137,9 +139,12 @@ public class InsertValues {
 					}
 				}
 
-				this.supplier.insertOne(new Document("supplier_key", key).append("name", "SUpplier#r" + formatted_key)
-						.append("address", addressString).append("nation_key", nationInteger)
-						.append("phone", phoneString).append("acct_bal", acctbalString)
+				this.supplier.insertOne(new Document("supplier_key", key)
+						.append("name", "SUpplier#r" + formatted_key)
+						.append("address", addressString)
+						.append("nation_key", nationInteger)
+						.append("phone", phoneString)
+						.append("acct_bal", acctbalString)
 						.append("comment", commentString));
 			}
 		} catch (Exception e) {
@@ -203,9 +208,14 @@ public class InsertValues {
 				String pCommentString = random.ints(97, 122 + 1).limit(length)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 
-				this.part.insertOne(new Document("part_key", key).append("name", nameString).append("mfgr", mfgrString)
-						.append("brand", brandString).append("type", typeString).append("size", sizeString)
-						.append("container", containerString).append("retail_price", retailPriceString)
+				this.part.insertOne(new Document("part_key", key)
+						.append("name", nameString)
+						.append("mfgr", mfgrString)
+						.append("brand", brandString)
+						.append("type", typeString)
+						.append("size", sizeString)
+						.append("container", containerString)
+						.append("retail_price", retailPriceString)
 						.append("comment", pCommentString));
 			}
 		} catch (Exception e) {
@@ -230,9 +240,12 @@ public class InsertValues {
 							.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
 							.toString();
 
-					this.partSupplier.insertOne(new Document("part_key", psKey).append("supp_key", psSuppKey)
-							.append("avail_qty", psAvailQTY).append("supply_cost", psSupplyCost)
-							.append("comment", psComment));
+					this.partSupplier.insertOne(new Document("part_key", psKey)
+							.append("supp_key", psSuppKey)
+							.append("avail_qty", psAvailQTY)
+							.append("supply_cost", psSupplyCost)
+							.append("comment", psComment)
+							);
 				}
 			}
 		} catch (Exception e) {
@@ -265,10 +278,15 @@ public class InsertValues {
 				String commentString = random.ints(97, 122 + 1).limit(count)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 
-				this.customer.insertOne(new Document("cust_key", key).append("name", cNameString)
-						.append("address", addressString).append("nation_key", nationInteger)
-						.append("phone", phoneString).append("acct_bal", acctbalString)
-						.append("mkt_segment", mktSegmentString).append("comment", commentString));
+				this.customer.insertOne(new Document("cust_key", key)
+						.append("name", cNameString)
+						.append("address", addressString)
+						.append("nation_key", nationInteger)
+						.append("phone", phoneString)
+						.append("acct_bal", acctbalString)
+						.append("mkt_segment", mktSegmentString)
+						.append("comment", commentString)
+						);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -283,7 +301,7 @@ public class InsertValues {
 		Date startDate = Date.valueOf("1992-01-01");
 		Date currentDate = Date.valueOf("1995-06-17");
 		Date endDate = Date.valueOf("1998-12-31");
-		try {			
+		try {
 			Integer orderSize = sf * 1500000 * 4;
 			ArrayList<Integer> orderKeys = shuffleKey(1500000 * 4);
 			Random random = new Random();
@@ -323,7 +341,16 @@ public class InsertValues {
 					Integer suppKey = (partKey + (i * ((S / 4) + (partKey - 1) / S))) % S;
 					Integer lineNum = j; // unique within 7, for simplicity, set to j
 					Integer quantity = random.nextInt(50) + 1;
-					Double extendedPrice = quantity * retailPrices[partKey];
+
+					Double extendedPrice;					
+//					Double extendedPrice = (double) quantity * retailPrices[0];
+					/* Null ptr */
+					if(partKey < retailPrices.length) {
+						extendedPrice = quantity * retailPrices[partKey];	
+					}else {
+						extendedPrice = quantity * retailPrices[0];
+					}					
+
 					String extendedPriceString = String.format("%.2f", extendedPrice);
 					Double discount = random.nextInt(11) / 100.0;
 					String discountString = String.format("%.2f", discount);
@@ -339,7 +366,8 @@ public class InsertValues {
 					String shipInstructString = instructs[random.nextInt(4)];
 					String shipModeString = modes[random.nextInt(7)];
 					String lCommentString = random.ints(97, 122 + 1).limit(124)
-							.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+							.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+							.toString();
 					if (receiptDate.before(currentDate)) {
 						returnFlagString = (random.nextInt(2) == 0) ? "R" : "A";
 					}
@@ -352,24 +380,16 @@ public class InsertValues {
 						Fnumber++;
 					}
 					totalPrice += extendedPrice * (1 + tax) * (1 - discount);
-					
-					this.lineItem.insertOne(new Document("order_key", L_OrderKey)
-							.append("part_key", partKey)
-							.append("supp_key", suppKey)
-							.append("line_number", lineNum)
-							.append("quantity", quantity)
-							.append("extended_price", extendedPriceString)
-							.append("discount", discountString)
-							.append("tax", taxString)							
-							.append("return_flag", returnFlagString)
-							.append("line_status", lineStatusString)
-							.append("ship_date", shipDate)
-							.append("commit_date", commitDate)
-							.append("receipt_date", receiptDate)
-							.append("ship_instructions", shipInstructString)
-							.append("ship_mode", shipModeString)
+
+					this.lineItem.insertOne(new Document("order_key", L_OrderKey).append("part_key", partKey)
+							.append("supp_key", suppKey).append("line_number", lineNum).append("quantity", quantity)
+							.append("extended_price", extendedPriceString).append("discount", discountString)
+							.append("tax", taxString).append("return_flag", returnFlagString)
+							.append("line_status", lineStatusString).append("ship_date", shipDate)
+							.append("commit_date", commitDate).append("receipt_date", receiptDate)
+							.append("ship_instructions", shipInstructString).append("ship_mode", shipModeString)
 							.append("comment", lCommentString)
-							);					
+							);
 				}
 				if (Fnumber == lineItemRows) {
 					orderStatusString = "F";
@@ -378,7 +398,7 @@ public class InsertValues {
 					orderStatusString = "O";
 				}
 				String totalPriceString = String.format("%.2f", totalPrice);
-				
+
 				this.orders.insertOne(new Document("order_key", orderKey)
 						.append("cust_key", custKey)
 						.append("order_status", orderStatusString)
@@ -386,8 +406,8 @@ public class InsertValues {
 						.append("order_date", orderDate)
 						.append("order_priority", priorityString)
 						.append("clerk", clerkString)
-						.append("ship_priority", shipPriorityString)							
-						.append("comment", oCommentString)						
+						.append("ship_priority", shipPriorityString)
+						.append("comment", oCommentString)
 						);
 			}
 		} catch (Exception e) {
@@ -424,13 +444,12 @@ public class InsertValues {
 			System.out.println("Inserting values into customer collection");
 			InsertCustomer();
 			System.out.println("Values Added to customer collection");
-			
+
 			/*
-			 * Order - 1500000 documents
-			 * lineItem - 6001215 documents
-			 * */
+			 * Order - 1500000 documents lineItem - 6001215 documents
+			 */
 			System.out.println("insert into order and lineItem");
-//			InsertOrderLineItem();
+			InsertOrderLineItem();
 			System.out.println("Values Added to order and lineItem collection");
 
 		} catch (Exception e) {
