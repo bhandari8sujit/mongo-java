@@ -1,19 +1,27 @@
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 import org.bson.Document;
+import org.bson.conversions.Bson;
+
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -39,9 +47,10 @@ import static java.util.Collections.singletonList;
 public class Q1 {
 
 	private MongoDatabase database;
-	private static final Date baseDate = Date.valueOf("1998-12-01");
+	private static final Date baseDate = Date.valueOf("1992-12-01");
 	private Instant startInstant;
 	private Instant endInstant;
+	public static int rowCount = 0;
 
 	public Q1(MongoDatabase db) {
 		this.database = db;
@@ -53,57 +62,114 @@ public class Q1 {
 			Random random = new Random();
 			int delta = random.nextInt(61) + 60;
 			Date queryDate = new Date(baseDate.getTime() - delta * 86400000);
-			this.startInstant = Instant.now();
+			// ISODate("1992-01-05T03:52:19.542+0000")
 
+			this.startInstant = Instant.now();
 			MongoCollection<Document> collection = database.getCollection("lineitem");
 
-			Consumer<Document> printBlock = new Consumer<Document>() {
+			Consumer<Document> printBlock = new Consumer<Document>() {				
 				@Override
 				public void accept(final Document document) {
-					System.out.println(document.toJson());
+					Q1.rowCount++;
+					System.out.println(document.toJson());					
 				}
 			};
 			
-			MongoCursor<Document> myDoc = collection
-					.find(lt("ship_date", queryDate))
-					.projection(fields(include("return_flag", "line_status", "quantity", "extended_price", "discount"), excludeId()))
-					.sort(Sorts.ascending("return_flag"))
-					.sort(Sorts.ascending("line_status"))
-					.forEach(printBlock);
+			List<? extends Bson> pipeline = Arrays.asList(
+                    new Document()
+                            .append("$match", new Document()
+                                    .append("ship_date", new Document()
+                                            .append("$lte", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("1992-01-04 23:52:19.542-0400"))
+                                    )
+                            ), 
+                    new Document()
+                            .append("$group", new Document()
+                                    .append("_id", new Document()
+                                            .append("line_status", "$line_status")
+                                            .append("return_flag", "$return_flag")
+                                    )
+                                    .append("SUM(quantity)", new Document()
+                                            .append("$sum", "$quantity")
+                                    )
+                                    .append("SUM(extended_price)", new Document()
+                                            .append("$sum", "$extended_price")
+                                    )
+                                    .append("AVG(quantity)", new Document()
+                                            .append("$avg", "$quantity")
+                                    )
+                                    .append("AVG(extended_price)", new Document()
+                                            .append("$avg", "$extended_price")
+                                    )
+                                    .append("AVG(discount)", new Document()
+                                            .append("$avg", "$discount")
+                                    )
+                                    .append("COUNT(*)", new Document()
+                                            .append("$sum", 1)
+                                    )
+                            ), 
+                    new Document()
+                            .append("$project", new Document()
+                                    .append("return_flag", "$_id.return_flag")
+                                    .append("SUM(quantity)", "$SUM(quantity)")
+                                    .append("SUM(extended_price)", "$SUM(extended_price)")
+                                    .append("AVG(quantity)", "$AVG(quantity)")
+                                    .append("AVG(extended_price)", "$AVG(extended_price)")
+                                    .append("AVG(discount)", "$AVG(discount)")
+                                    .append("COUNT(*)", "$COUNT(*)")
+                                    .append("line_status", "$_id.line_status")
+                                    .append("_id", 0)
+                            ), 
+                    new Document()
+                            .append("$sort", new Document()
+                                    .append("return_flag", 1)
+                                    .append("line_status", 1)
+                            ), 
+                    new Document()
+                            .append("$project", new Document()
+                                    .append("_id", 0)
+                                    .append("return_flag", "$return_flag")
+                                    .append("SUM(quantity)", "$SUM(quantity)")
+                                    .append("SUM(extended_price)", "$SUM(extended_price)")
+                                    .append("AVG(quantity)", "$AVG(quantity)")
+                                    .append("AVG(extended_price)", "$AVG(extended_price)")
+                                    .append("AVG(discount)", "$AVG(discount)")
+                                    .append("COUNT(*)", "$COUNT(*)")
+                            )
+            );
+            
+            collection.aggregate(pipeline)
+                    .allowDiskUse(true)
+                    .forEach(printBlock);
+			
+
+//			collection.aggregate(
+//				      Arrays.asList(
+//				    	Aggregates.match(Filters.lte("ship_date", queryDate)),
+//				    	Aggregates.project(Document.parse("{sum_qty: {$sum: ['$quantity', 0]}}")),
+//				    	Aggregates.project(Document.parse("{sum_base_price: {$sum: ['$extended_price', 0]}}"))				    	
+//				      )				      
+//				).forEach(printBlock);
+            
+            
+			
+			/*
+			 * Display all documents
+			MongoCursor<Document> cursor = collection.find().projection(excludeId()).iterator();
 			try {
-				while (myDoc.hasNext()) {
-					System.out.println(myDoc.next().toJson());
+				while (cursor.hasNext()) {
+					rowCount++;					
+					System.out.println(cursor.next().toJson());					
 				}
 			} finally {
-				myDoc.close();
+				cursor.close();
 			}
-
-//			statement.execute(
-//					"select\n" + 
-//					"l_returnflag,\n" + 
-//					"l_linestatus,\n" + 
-//					"sum(l_quantity) as sum_qty,\n" + 
-//					"sum(l_extendedprice) as sum_base_price,\n" + 
-//					"sum(l_extendedprice*(1-l_discount)) as sum_disc_price,\n" + 
-//					"sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge,\n" + 
-//					"avg(l_quantity) as avg_qty,\n" + 
-//					"avg(l_extendedprice) as avg_price,\n" + 
-//					"avg(l_discount) as avg_disc,\n" + 
-//					"count(*) as count_order\n" + 
-//					"from\n" + 
-//					"lineitem\n" + 
-//					"where\n" + 
-//					"l_shipdate <= date '"+queryDate+"'\n" + 
-//					"group by\n" + 
-//					"l_returnflag,\n" + 
-//					"l_linestatus\n" + 
-//					"order by\n" + 
-//					"l_returnflag,\n" + 
-//					"l_linestatus");
-
+			
+			*/
+            
 			this.endInstant = Instant.now();
 			System.out.println("Execution time for Q1 is: " + Duration.between(startInstant, endInstant).toMillis()
 					+ " miliseconds");
+			System.out.println("Number of documents: " + rowCount);
 
 		} catch (Exception e) {
 			e.printStackTrace();

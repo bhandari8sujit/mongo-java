@@ -12,7 +12,7 @@ import org.bson.Document;
 public class InsertValues {
 
 	private MongoDatabase database;
-	private int sf;
+	private double sf;
 	private Double[] retailPrices;
 
 	private MongoCollection<Document> customer;
@@ -31,10 +31,10 @@ public class InsertValues {
 	List<Integer> customer_key = new ArrayList<>();
 	List<Integer> order_key = new ArrayList<>();
 
-	public InsertValues(MongoDatabase db, int i) {
+	public InsertValues(MongoDatabase db, double i) {
 		this.database = db;
 		this.sf = i;
-		this.retailPrices = new Double[this.sf * 200000];
+		this.retailPrices = new Double[(int) (this.sf * 200000)];
 		this.customer = database.getCollection("customer");
 		this.lineItem = database.getCollection("lineitem");
 		this.nation = database.getCollection("nation");
@@ -46,7 +46,7 @@ public class InsertValues {
 	}
 
 	private ArrayList<Integer> shuffleKey(Integer fixNum) {
-		Integer size = new Integer(sf * fixNum);
+		Integer size = new Integer((int) (sf * fixNum));
 		ArrayList<Integer> keys = new ArrayList<Integer>();
 		for (int it = 0; it < size; it++) {
 			keys.add(it);
@@ -101,11 +101,11 @@ public class InsertValues {
 
 	public void InsertSupplier() {
 		try {
-			Integer size = sf * 10000;
+			int size = (int) (sf * 10000);
 			ArrayList<Integer> keys = shuffleKey(10000);
 			Random random = new Random();
 			ArrayList<Integer> CommentList = new ArrayList<Integer>();
-			Integer commentedsize = 10 * sf;
+			Integer commentedsize = (int) (10 * sf);
 			Integer index = 0;
 			while (CommentList.size() < commentedsize) {
 				index = random.nextInt(size);
@@ -170,7 +170,7 @@ public class InsertValues {
 		String[] containerSyllables2 = { "CASE", "BOX", "BAG", "JAR", "PKG", "PACK", "CAN", "DRUM" };
 
 		try {
-			Integer size = sf * 200000;
+			Integer size = (int) (sf * 200000);
 			Random random = new Random();
 			ArrayList<Integer> keys = shuffleKey(200000);
 
@@ -225,8 +225,8 @@ public class InsertValues {
 
 	public void InsertPartSupp() {
 		try {
-			Integer S = sf * 10000;
-			Integer size = sf * 200000;
+			Integer S = (int) (sf * 10000);
+			Integer size = (int) (sf * 200000);
 			Random random = new Random();
 			ArrayList<Integer> psKeys = shuffleKey(200000);
 			for (int idx = 0; idx < size; idx++) {
@@ -258,7 +258,7 @@ public class InsertValues {
 		String[] Segments = { "AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD" };
 
 		try {
-			Integer size = sf * 150000;
+			Integer size = (int) (sf * 150000);
 			Random random = new Random();
 			ArrayList<Integer> keys = shuffleKey(150000);
 			for (int i = 0; i < size; i++) {
@@ -302,7 +302,7 @@ public class InsertValues {
 		Date currentDate = Date.valueOf("1995-06-17");
 		Date endDate = Date.valueOf("1998-12-31");
 		try {
-			Integer orderSize = sf * 1500000 * 4;
+			Integer orderSize = (int) (sf * 1500000 * 4);
 			ArrayList<Integer> orderKeys = shuffleKey(1500000 * 4);
 			Random random = new Random();
 			for (int idx = 0; idx < orderSize; idx++) {
@@ -312,7 +312,7 @@ public class InsertValues {
 				}
 				Integer custKey = 0;
 				do {
-					custKey = random.nextInt(sf * 150000);
+					custKey = random.nextInt((int) (sf * 150000));
 				} while (custKey % 3 == 0);
 				// set to P as default, will change according to lineItems
 				String orderStatusString = "P";
@@ -325,7 +325,7 @@ public class InsertValues {
 				int difference = (int) (raw - startRaw);
 				Date orderDate = new Date(startRaw + random.nextInt(difference));
 				String priorityString = priorities[random.nextInt(5)];
-				String clerkString = "Clerk#" + String.format("%09d", random.nextInt(sf * 1000) + 1);
+				String clerkString = "Clerk#" + String.format("%09d", random.nextInt((int) (sf * 1000)) + 1);
 				String shipPriorityString = "0";
 				String oCommentString = random.ints(97, 122 + 1).limit(124)
 						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
@@ -335,8 +335,8 @@ public class InsertValues {
 				int Onumber = 0;
 				for (int j = 0; j < lineItemRows; j++) {
 					Integer L_OrderKey = orderKey;
-					Integer partKey = random.nextInt(sf * 200000);
-					int S = sf * 10000;
+					Integer partKey = random.nextInt((int) (sf * 200000));
+					int S = (int) (sf * 10000);
 					int i = random.nextInt(4);
 					Integer suppKey = (partKey + (i * ((S / 4) + (partKey - 1) / S))) % S;
 					Integer lineNum = j; // unique within 7, for simplicity, set to j
@@ -381,13 +381,19 @@ public class InsertValues {
 					}
 					totalPrice += extendedPrice * (1 + tax) * (1 - discount);
 
-					this.lineItem.insertOne(new Document("order_key", L_OrderKey).append("part_key", partKey)
-							.append("supp_key", suppKey).append("line_number", lineNum).append("quantity", quantity)
-							.append("extended_price", extendedPriceString).append("discount", discountString)
+					this.lineItem.insertOne(new Document("order_key", L_OrderKey)
+							.append("part_key", partKey)
+							.append("supp_key", suppKey).append("line_number", lineNum)
+							.append("quantity", quantity)
+							.append("extended_price", extendedPriceString)
+							.append("discount", discountString)
 							.append("tax", taxString).append("return_flag", returnFlagString)
-							.append("line_status", lineStatusString).append("ship_date", shipDate)
-							.append("commit_date", commitDate).append("receipt_date", receiptDate)
-							.append("ship_instructions", shipInstructString).append("ship_mode", shipModeString)
+							.append("line_status", lineStatusString)
+							.append("ship_date", shipDate)
+							.append("commit_date", commitDate)
+							.append("receipt_date", receiptDate)
+							.append("ship_instructions", shipInstructString)
+							.append("ship_mode", shipModeString)
 							.append("comment", lCommentString)
 							);
 				}
