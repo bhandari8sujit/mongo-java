@@ -12,8 +12,8 @@ public class Query {
             Q1 q1Task = new Q1(database);            
             q1Task.executeQuery();
             
-            Q2 q2Task = new Q2(database);            
-            q2Task.executeQuery();
+//            Q2 q2Task = new Q2(database);            
+//            q2Task.executeQuery();
             
             mongoClient.close();
 		}catch(Exception e) {

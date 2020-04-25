@@ -436,23 +436,23 @@ public class InsertValues {
 			InsertSupplier();
 			System.out.println("Values Added to supplier collection");
 
-			/* 200000 documents */
+			/* 200000 documents for SF 1*/
 			System.out.println("Inserting values into part collection");
 			InsertPart();
 			System.out.println("Values Added to part collection");
 
-			/* 800000 documents */
+			/* 800000 documents for SF 1*/
 			System.out.println("Inserting values into partsupp collection");
 			InsertPartSupp();
 			System.out.println("Values Added to partsupp collection");
 
-			/* 150000 documents */
+			/* 150000 documents for SF 1*/
 			System.out.println("Inserting values into customer collection");
 			InsertCustomer();
 			System.out.println("Values Added to customer collection");
 
 			/*
-			 * Order - 1500000 documents lineItem - 6001215 documents
+			 * Order - 1500000 documents lineItem - 6001215 documents, for SF 1
 			 */
 			System.out.println("insert into order and lineItem");
 			InsertOrderLineItem();
