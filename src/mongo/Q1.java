@@ -1,3 +1,5 @@
+package mongo;
+
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -74,13 +76,79 @@ public class Q1 {
 				}
 			};	
 
-			collection.aggregate(
-				      Arrays.asList(
-				    	Aggregates.match(Filters.lte("ship_date", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("1992-01-04 23:52:19.542-0400"))),
-				    	Aggregates.project(Document.parse("{sum_qty: {$sum: ['$quantity', 0]}}")),
-				    	Aggregates.project(Document.parse("{sum_base_price: {$sum: ['$extended_price', 0]}}"))				    	
-				      )				      
-				).forEach(printBlock); 
+			List<? extends Bson> pipeline = Arrays.asList(
+			new Document()
+			      .append("$match", new Document()
+			              .append("ship_date", new Document()
+			                      .append("$lte", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("1992-01-04 23:52:19.542-0400"))
+			              )
+			      ), 
+			new Document()
+			      .append("$group", new Document()
+			              .append("_id", new Document()
+			                      .append("line_status", "$line_status")
+			                      .append("return_flag", "$return_flag")
+			              )
+			              .append("SUM(quantity)", new Document()
+			                      .append("$sum", "$quantity")
+			              )
+			              .append("SUM(extended_price)", new Document()
+			                      .append("$sum", "$extended_price")
+			              )
+			              .append("AVG(quantity)", new Document()
+			                      .append("$avg", "$quantity")
+			              )
+			              .append("AVG(extended_price)", new Document()
+			                      .append("$avg", "$extended_price")
+			              )
+			              .append("AVG(discount)", new Document()
+			                      .append("$avg", "$discount")
+			              )
+			              .append("COUNT(*)", new Document()
+			                      .append("$sum", 1)
+			              )
+			      ), 
+			new Document()
+			      .append("$project", new Document()
+			              .append("return_flag", "$_id.return_flag")
+			              .append("SUM(quantity)", "$SUM(quantity)")
+			              .append("SUM(extended_price)", "$SUM(extended_price)")
+			              .append("AVG(quantity)", "$AVG(quantity)")
+			              .append("AVG(extended_price)", "$AVG(extended_price)")
+			              .append("AVG(discount)", "$AVG(discount)")
+			              .append("COUNT(*)", "$COUNT(*)")
+			              .append("line_status", "$_id.line_status")
+			              .append("_id", 0)
+			      ), 
+			new Document()
+			      .append("$sort", new Document()
+			              .append("return_flag", 1)
+			              .append("line_status", 1)
+			      ), 
+			new Document()
+			      .append("$project", new Document()
+			              .append("_id", 0)
+			              .append("return_flag", "$return_flag")
+			              .append("SUM(quantity)", "$SUM(quantity)")
+			              .append("SUM(extended_price)", "$SUM(extended_price)")
+			              .append("AVG(quantity)", "$AVG(quantity)")
+			              .append("AVG(extended_price)", "$AVG(extended_price)")
+			              .append("AVG(discount)", "$AVG(discount)")
+			              .append("COUNT(*)", "$COUNT(*)")
+			      )
+			);
+			
+			collection.aggregate(pipeline)
+			.allowDiskUse(true)
+			.forEach(printBlock);
+			
+//			collection.aggregate(
+//				      Arrays.asList(
+//				    	Aggregates.match(Filters.lte("ship_date", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("1992-01-04 23:52:19.542-0400"))),
+//				    	Aggregates.project(Document.parse("{sum_qty: {$sum: ['$quantity', 0]}}")),
+//				    	Aggregates.project(Document.parse("{sum_base_price: {$sum: ['$extended_price', 0]}}"))				    	
+//				      )				      
+//				).forEach(printBlock); 
             
 			
 			/*
@@ -110,68 +178,3 @@ public class Q1 {
 
 
 
-//List<? extends Bson> pipeline = Arrays.asList(
-//new Document()
-//      .append("$match", new Document()
-//              .append("ship_date", new Document()
-//                      .append("$lte", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("1992-01-04 23:52:19.542-0400"))
-//              )
-//      ), 
-//new Document()
-//      .append("$group", new Document()
-//              .append("_id", new Document()
-//                      .append("line_status", "$line_status")
-//                      .append("return_flag", "$return_flag")
-//              )
-//              .append("SUM(quantity)", new Document()
-//                      .append("$sum", "$quantity")
-//              )
-//              .append("SUM(extended_price)", new Document()
-//                      .append("$sum", "$extended_price")
-//              )
-//              .append("AVG(quantity)", new Document()
-//                      .append("$avg", "$quantity")
-//              )
-//              .append("AVG(extended_price)", new Document()
-//                      .append("$avg", "$extended_price")
-//              )
-//              .append("AVG(discount)", new Document()
-//                      .append("$avg", "$discount")
-//              )
-//              .append("COUNT(*)", new Document()
-//                      .append("$sum", 1)
-//              )
-//      ), 
-//new Document()
-//      .append("$project", new Document()
-//              .append("return_flag", "$_id.return_flag")
-//              .append("SUM(quantity)", "$SUM(quantity)")
-//              .append("SUM(extended_price)", "$SUM(extended_price)")
-//              .append("AVG(quantity)", "$AVG(quantity)")
-//              .append("AVG(extended_price)", "$AVG(extended_price)")
-//              .append("AVG(discount)", "$AVG(discount)")
-//              .append("COUNT(*)", "$COUNT(*)")
-//              .append("line_status", "$_id.line_status")
-//              .append("_id", 0)
-//      ), 
-//new Document()
-//      .append("$sort", new Document()
-//              .append("return_flag", 1)
-//              .append("line_status", 1)
-//      ), 
-//new Document()
-//      .append("$project", new Document()
-//              .append("_id", 0)
-//              .append("return_flag", "$return_flag")
-//              .append("SUM(quantity)", "$SUM(quantity)")
-//              .append("SUM(extended_price)", "$SUM(extended_price)")
-//              .append("AVG(quantity)", "$AVG(quantity)")
-//              .append("AVG(extended_price)", "$AVG(extended_price)")
-//              .append("AVG(discount)", "$AVG(discount)")
-//              .append("COUNT(*)", "$COUNT(*)")
-//      )
-//);
-//
-//collection.aggregate(pipeline)
-//.allowDiskUse(true)
-//.forEach(printBlock);
